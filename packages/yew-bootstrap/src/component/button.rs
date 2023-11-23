@@ -139,6 +139,9 @@ pub struct ButtonProps {
     /// the button is not `disabled`.
     #[prop_or_default]
     pub target: Option<AttrValue>,
+
+    #[prop_or_default]
+    pub dropdown: bool,
 }
 
 impl Component for Button {
@@ -201,6 +204,22 @@ impl Component for Button {
                     { &props.text }
                     { for props.children.iter() }
                 </a>
+            }
+        } else if props.dropdown {
+            classes.push("dropdown-toggle");
+            html! {
+                <button
+                    class={classes}
+                    disabled={props.disabled}
+                    name={props.name.clone()}
+                    onclick={props.onclick.clone()}
+                    aria-expanded="false"
+                    data-bs-toggle="dropdown"
+                    data-bs-dismiss={modal_dismiss}
+                >
+                    { &props.text }
+                    { for props.children.iter() }
+                </button>
             }
         } else {
             html! {
