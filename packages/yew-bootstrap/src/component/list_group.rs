@@ -177,7 +177,7 @@ pub fn ListGroupItem(props: &ListGroupItemProps) -> Html {
     } else if props.action {
         classes.push("list-group-item-action");
         html! {
-            <button class={classes} onclick={props.onclick.clone()}>
+            <button type="button" class={classes} onclick={props.onclick.clone()}>
                 {props.children.clone()}
             </button>
         }

@@ -142,6 +142,9 @@ pub struct ButtonProps {
 
     #[prop_or_default]
     pub dropdown: bool,
+
+    #[prop_or_default]
+    pub title: Option<AttrValue>,
 }
 
 impl Component for Button {
@@ -185,6 +188,7 @@ impl Component for Button {
                     onclick={props.onclick.clone()}
                     data-bs-toggle="modal"
                     data-bs-target={format!("#{}",target.clone())}
+                    title={props.title.clone()}
                 >
                     { &props.text }
                     { for props.children.iter() }
@@ -200,6 +204,7 @@ impl Component for Button {
                     data-bs-dismiss={modal_dismiss}
                     href={url.clone()}
                     target={props.target.clone()}
+                    title={props.title.clone()}
                 >
                     { &props.text }
                     { for props.children.iter() }
@@ -216,6 +221,7 @@ impl Component for Button {
                     aria-expanded="false"
                     data-bs-toggle="dropdown"
                     data-bs-dismiss={modal_dismiss}
+                    title={props.title.clone()}
                 >
                     { &props.text }
                     { for props.children.iter() }
@@ -229,6 +235,7 @@ impl Component for Button {
                     name={props.name.clone()}
                     onclick={props.onclick.clone()}
                     data-bs-dismiss={modal_dismiss}
+                    title={props.title.clone()}
                 >
                     { &props.text }
                     { for props.children.iter() }

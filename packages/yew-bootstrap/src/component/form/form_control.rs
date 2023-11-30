@@ -1,5 +1,5 @@
-use yew::prelude::*;
 use super::*;
+use yew::{prelude::*, html::IntoPropValue};
 
 /// Validation type for a form control, with feedback message
 #[derive(Clone, PartialEq)]
@@ -12,6 +12,47 @@ pub enum FormControlValidation {
     Invalid(AttrValue),
 }
 
+/// Read only type for the form control
+#[derive(Clone, Copy, PartialEq, Default)]
+pub enum FormControlReadOnly {
+    /// The form field is editable normally
+    #[default]
+    Editable,
+
+    /// The form field is [read-only][0].
+    ///
+    /// This is not supported for [select][FormControlType::Select] elements,
+    /// use the [`disabled` property][FormControlProps::disabled] instead.
+    ///
+    /// [0]: https://getbootstrap.com/docs/5.3/forms/form-control/#readonly
+    ReadOnly,
+
+    /// The form field is [read-only and rendered in plain text][0]. This adds
+    /// proper margins and padding so that the text will align with regular form
+    /// fields.
+    ///
+    /// On [checkbox][FormControlType::Checkbox] and
+    /// [radio][FormControlType::Radio] inputs, this is the same as
+    /// [`ReadOnly`][FormControlReadOnly::ReadOnly].
+    /// 
+    /// This is not supported for [select][FormControlType::Select] elements,
+    /// use the [`disabled` property][FormControlProps::disabled] instead.
+    ///
+    /// [0]: https://getbootstrap.com/docs/5.3/forms/form-control/#readonly-plain-text
+    ReadOnlyPlainText,
+}
+
+/// This allows the [`readonly` property][FormControlProps::readonly] to be set
+/// with a `bool`, like the `<input>` element.
+impl IntoPropValue<FormControlReadOnly> for bool {
+    fn into_prop_value(self) -> FormControlReadOnly {
+        if self {
+            FormControlReadOnly::ReadOnly
+        } else {
+            FormControlReadOnly::Editable
+        }
+    }
+}
 
 /// # Properties for a FormControl
 #[derive(Properties, Clone, PartialEq)]
@@ -46,7 +87,7 @@ pub struct FormControlProps {
     /// Value as string, ignored for checkbox (Use `checked` instead). For a radio,
     /// indicates the value in the group
     #[prop_or_default]
-    pub value: AttrValue,
+    pub value: Option<AttrValue>,
 
     /// Is this field required? Defaults to false.
     #[prop_or_default]
@@ -96,12 +137,19 @@ pub struct FormControlProps {
     /// Optional onclick event applied on the input
     #[prop_or_default]
     pub onclick: Callback<MouseEvent>,
-}
 
+    /// Sets the form's read-only state.
+    ///
+    /// This does not work with [FormControlType::Select].
+    #[prop_or_default]
+    pub readonly: FormControlReadOnly,
+}
 
 /// Convert an option (Typically integer) to an AttrValue option
 fn convert_to_string_option<T>(value: &Option<T>) -> Option<AttrValue>
-where T: std::fmt::Display {
+where
+    T: std::fmt::Display,
+{
     value.as_ref().map(|v| AttrValue::from(v.to_string()))
 }
 
@@ -268,39 +316,58 @@ pub fn FormControl(props: &FormControlProps) -> Html {
     let label = match props.label.clone() {
         None => None,
         Some(text) => {
-            let class = if props.floating { None } else { Some("form-label") };
+            let class = if props.floating {
+                None
+            } else {
+                Some("form-label")
+            };
             Some(html! {
                 <label for={ props.id.clone() } class={ class }>{ text.clone() }</label>
             })
         }
     };
 
-    let help = props.help.as_ref().map(|text| html! {
-        <div class="form-text">{ text.clone() }</div>
+    let help = props.help.as_ref().map(|text| {
+        html! {
+            <div class="form-text">{ text.clone() }</div>
+        }
     });
 
     let (validation, validation_class) = match props.validation.clone() {
         FormControlValidation::None => (None, None),
         FormControlValidation::Valid(None) => (None, Some("is-valid")),
-        FormControlValidation::Valid(Some(text)) => (Some(html! {
-            <div class="valid-feedback"> { text.clone() }</div>
-        }), Some("is-valid")),
-        FormControlValidation::Invalid(text) => (Some(html! {
-            <div class="invalid-feedback"> { text.clone() }</div>
-        }), Some("is-invalid")),
+        FormControlValidation::Valid(Some(text)) => (
+            Some(html! {
+                <div class="valid-feedback"> { text.clone() }</div>
+            }),
+            Some("is-valid"),
+        ),
+        FormControlValidation::Invalid(text) => (
+            Some(html! {
+                <div class="invalid-feedback"> { text.clone() }</div>
+            }),
+            Some("is-invalid"),
+        ),
     };
 
     let pattern = match &props.ctype {
-        FormControlType::Email{ pattern } => pattern,
-        FormControlType::Url{ pattern } => pattern,
+        FormControlType::Email { pattern } => pattern,
+        FormControlType::Url { pattern } => pattern,
         _ => &None,
     };
 
     // Placeholder required when `floating` is set, assign to label
     let mut placeholder = props.placeholder.clone();
     if props.floating && placeholder.is_none() {
-        placeholder = Some(props.label.clone().expect("When floating is set, label cannot be None"));
+        placeholder = Some(
+            props
+                .label
+                .clone()
+                .expect("When floating is set, label cannot be None"),
+        );
     }
+
+    let readonly = !matches!(props.readonly, FormControlReadOnly::Editable);
 
     match &props.ctype {
         FormControlType::TextArea { cols, rows } => {
@@ -309,12 +376,18 @@ pub fn FormControl(props: &FormControlProps) -> Html {
                 classes.push("form-floating");
             }
 
-            let input_classes = classes!("form-control", validation_class);
+            let mut input_classes = classes!("form-control", validation_class);
+            if matches!(props.readonly, FormControlReadOnly::ReadOnlyPlainText) {
+                input_classes.push("form-control-plaintext")
+            }
 
             let cols_str = convert_to_string_option(cols);
             let rows_str = convert_to_string_option(rows);
-            let (label_before, label_after) =
-                if props.floating { (None, label) } else { (label, None) };
+            let (label_before, label_after) = if props.floating {
+                (None, label)
+            } else {
+                (label, None)
+            };
 
             html! {
                 <div class={ classes }>
@@ -332,13 +405,15 @@ pub fn FormControl(props: &FormControlProps) -> Html {
                         onchange={ props.onchange.clone() }
                         onclick={ props.onclick.clone() }
                         required={ props.required }
+                        readonly={ readonly }
+
                     />
                     { label_after }
                     { help }
                     { validation }
                 </div>
             }
-        },
+        }
         FormControlType::Select => {
             let mut classes = classes!(props.class.clone());
             if props.floating {
@@ -347,8 +422,11 @@ pub fn FormControl(props: &FormControlProps) -> Html {
 
             let input_classes = classes!("form-select", validation_class);
 
-            let (label_before, label_after) =
-                if props.floating { (None, label) } else { (label, None) };
+            let (label_before, label_after) = if props.floating {
+                (None, label)
+            } else {
+                (label, None)
+            };
 
             html! {
                 <div class={ classes }>
@@ -369,7 +447,7 @@ pub fn FormControl(props: &FormControlProps) -> Html {
                     { validation }
                 </div>
             }
-        },
+        }
         FormControlType::Checkbox | FormControlType::Radio => {
             let mut classes = classes!("form-check");
             classes.push(props.class.clone());
@@ -389,13 +467,14 @@ pub fn FormControl(props: &FormControlProps) -> Html {
                         onchange={ props.onchange.clone() }
                         onclick={ props.onclick.clone() }
                         required={ props.required }
+                        readonly={ readonly }
                     />
                     { label }
                     { help }
                     { validation}
                 </div>
             }
-        },
+        }
         _ => {
             let mut min_str = None;
             let mut max_str = None;
@@ -405,36 +484,44 @@ pub fn FormControl(props: &FormControlProps) -> Html {
                 FormControlType::Number { min, max } => {
                     min_str = convert_to_string_option(min);
                     max_str = convert_to_string_option(max);
-                },
+                }
                 FormControlType::Range { min, max, step } => {
                     min_str = Some(AttrValue::from(min.to_string()));
                     max_str = Some(AttrValue::from(max.to_string()));
                     step_str = convert_to_string_option(step);
-                },
-                FormControlType::DateMinMax { min, max } |
-                FormControlType::DatetimeMinMax { min, max } |
-                FormControlType::TimeMinMax { min, max } => {
+                }
+                FormControlType::DateMinMax { min, max }
+                | FormControlType::DatetimeMinMax { min, max }
+                | FormControlType::TimeMinMax { min, max } => {
                     min_str = min.clone();
                     max_str = max.clone();
-                },
+                }
                 FormControlType::File { accept } => {
-                    let accept_vec : Vec<String> = accept.clone().iter().cloned().map(
-                        move |value| { value.to_string() }
-                    ).collect();
+                    let accept_vec: Vec<String> = accept
+                        .clone()
+                        .iter()
+                        .cloned()
+                        .map(move |value| value.to_string())
+                        .collect();
                     accept_str = Some(accept_vec.join(", "));
                 }
-                _ => ()
+                _ => (),
             }
 
             let mut classes = classes!(props.class.clone());
             if props.floating {
                 classes.push("form-floating");
             }
+            let mut input_classes = classes!("form-control", validation_class);
+            if matches!(props.readonly, FormControlReadOnly::ReadOnlyPlainText) {
+                input_classes.push("form-control-plaintext")
+            }
 
-            let input_classes = classes!("form-control", validation_class);
-
-            let (label_before, label_after) =
-                if props.floating { (None, label) } else { (label, None) };
+            let (label_before, label_after) = if props.floating {
+                (None, label)
+            } else {
+                (label, None)
+            };
 
             html! {
                 <div class={ classes }>
@@ -456,6 +543,7 @@ pub fn FormControl(props: &FormControlProps) -> Html {
                         onclick={ props.onclick.clone() }
                         oninput={ props.oninput.clone() }
                         required={ props.required }
+                        readonly={ readonly }
                     />
                     { label_after }
                     { help }

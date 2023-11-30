@@ -126,7 +126,13 @@ pub struct NavItemProperties {
     pub id: AttrValue,
     /// dropdown items
     #[prop_or_default]
-    pub children: Children
+    pub children: Children,
+    /// Callback when clicked
+    #[prop_or_default]
+    pub onclick: Callback<MouseEvent>,
+    /// Optional icon
+    #[prop_or_default]
+    pub icon: Option<&'static BI>,
 }
 
 impl Component for NavItem {
@@ -157,7 +163,10 @@ impl Component for NavItem {
                     true => {
                         html! {
                             <li class="nav-item">
-                                <a class={classes} tabindex="-1" aria-disabled="true" href={props.url.clone()}>
+                                <a class={classes} tabindex="-1" aria-disabled="true" href={props.url.clone()} onclick={props.onclick.clone()}>
+                                    if let Some(icon) = props.icon {
+                                        {icon}{" "}
+                                    }
                                     {props.text.clone()}
                                 </a>
                             </li>
@@ -166,7 +175,10 @@ impl Component for NavItem {
                     false => {
                         html! {
                             <li class="nav-item">
-                                <a class={classes} href={props.url.clone()}>
+                                <a class={classes} href={props.url.clone()} onclick={props.onclick.clone()}>
+                                    if let Some(icon) = props.icon {
+                                        {icon}{" "}
+                                    }
                                     {props.text.clone()}
                                 </a>
                             </li>
