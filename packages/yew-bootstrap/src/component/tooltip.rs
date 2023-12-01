@@ -9,39 +9,16 @@
 //! * <https://github.com/twbs/bootstrap/blob/main/js/src/tooltip.js>
 
 use popper_rs::{
-    prelude::{use_popper, Modifier, Offset, Options, Placement as PopperPlacement, Strategy},
+    prelude::{use_popper, Modifier, Offset, Options, Strategy},
     state::ApplyAttributes,
 };
 use wasm_bindgen::{closure::Closure, JsCast};
-use web_sys::{console, HtmlElement};
+use web_sys::HtmlElement;
 use yew::{platform::spawn_local, prelude::*};
-
-// use crate::util::{PopperConfig, Popper};
-
-#[derive(Default, PartialEq, Clone, Copy)]
-pub enum Placement {
-    #[default]
-    Auto,
-    Top,
-    Bottom,
-    Left,
-    Right,
-}
-
-impl From<Placement> for PopperPlacement {
-    fn from(value: Placement) -> Self {
-        match value {
-            Placement::Auto => PopperPlacement::Auto,
-            Placement::Bottom => PopperPlacement::Bottom,
-            Placement::Left => PopperPlacement::Left,
-            Placement::Right => PopperPlacement::Right,
-            Placement::Top => PopperPlacement::Top,
-        }
-    }
-}
+use crate::util::Placement;
 
 impl Placement {
-    const fn bootstrap_class(&self) -> &'static str {
+    const fn tooltip_bootstrap_class(&self) -> &'static str {
         match self {
             Placement::Auto => "bs-tooltip-auto",
             Placement::Left => "bs-tooltip-left",
@@ -304,7 +281,7 @@ pub fn Tooltip(props: &TooltipProps) -> Html {
     } else {
         popper_style.insert("z-index".to_string(), "-100".to_string());
     }
-    class.push(props.placement.bootstrap_class());
+    class.push(props.placement.tooltip_bootstrap_class());
 
     html_nested! {
         <div

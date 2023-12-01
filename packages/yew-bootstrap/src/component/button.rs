@@ -258,7 +258,6 @@ impl Component for Button {
                     name={props.name.clone()}
                     onclick={props.onclick.clone()}
                     aria-expanded="false"
-                    data-bs-toggle="dropdown"
                     data-bs-dismiss={modal_dismiss}
                     ref={props.node_ref.clone()}
                     id={props.id.clone()}
