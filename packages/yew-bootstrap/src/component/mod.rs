@@ -15,6 +15,7 @@ mod spinner;
 mod display;
 mod lead;
 mod accordion;
+mod tooltip;
 
 pub use self::column::*;
 pub use self::alert::*;
@@ -32,3 +33,4 @@ pub use self::spinner::*;
 pub use self::display::*;
 pub use self::lead::*;
 pub use self::accordion::*;
+pub use self::tooltip::*;

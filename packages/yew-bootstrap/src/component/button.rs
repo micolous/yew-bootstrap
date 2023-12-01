@@ -1,4 +1,6 @@
-use crate::util::Color;
+use crate::util::Color; //, Tooltip, TooltipOptions};
+// use wasm_bindgen::{JsCast, JsValue};
+// use web_sys::HtmlElement;
 use yew::prelude::*;
 
 #[derive(Clone, PartialEq, Eq)]
@@ -70,7 +72,10 @@ impl Default for ButtonSize {
 ///     }
 /// }
 /// ```
-pub struct Button {}
+pub struct Button {
+    // node_ref: NodeRef,
+    // tooltip: Option<Tooltip>,
+}
 
 /// # Properties for [Button]
 #[derive(Properties, Clone, PartialEq)]
@@ -144,7 +149,7 @@ pub struct ButtonProps {
     pub dropdown: bool,
 
     #[prop_or_default]
-    pub title: Option<AttrValue>,
+    pub node_ref: NodeRef,
 }
 
 impl Component for Button {
@@ -152,8 +157,27 @@ impl Component for Button {
     type Properties = ButtonProps;
 
     fn create(_ctx: &Context<Self>) -> Self {
-        Self {}
+        Self {
+            // node_ref: NodeRef::default(),
+            // tooltip: None,
+        }
     }
+
+    // fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+    //     if first_render {
+    //         // https://getbootstrap.com/docs/5.3/components/tooltips/#usage
+    //         let Some(elem) = self.node_ref.cast::<HtmlElement>() else {
+    //             return;
+    //         };
+    //         self.tooltip = Some(Tooltip::new(elem));
+    //     }
+    // }
+
+    // fn destroy(&mut self, ctx: &Context<Self>) {
+    //     if let Some(tooltip) = self.tooltip.take() {
+    //         tooltip.dispose();
+    //     }
+    // }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
@@ -179,6 +203,16 @@ impl Component for Button {
             false => "",
         };
 
+        // if let Some(tooltip) = &self.tooltip {
+        //     let title = props.title.clone().unwrap_or_default().to_string();
+        //     let options = TooltipOptions::new();
+        //     options.set_title(title.into());
+
+        //     tooltip.set_content(options);
+        //     // todo: tooltip.setContent({ '.title': 'another title' })
+        //     // tooltip.set_content();
+        // }
+
         if let Some(target) = &props.modal_target {
             html! {
                 <button
@@ -188,7 +222,8 @@ impl Component for Button {
                     onclick={props.onclick.clone()}
                     data-bs-toggle="modal"
                     data-bs-target={format!("#{}",target.clone())}
-                    title={props.title.clone()}
+                    // title={props.title.clone()}
+                    ref={props.node_ref.clone()}
                 >
                     { &props.text }
                     { for props.children.iter() }
@@ -204,7 +239,8 @@ impl Component for Button {
                     data-bs-dismiss={modal_dismiss}
                     href={url.clone()}
                     target={props.target.clone()}
-                    title={props.title.clone()}
+                    // title={props.title.clone()}
+                    ref={props.node_ref.clone()}
                 >
                     { &props.text }
                     { for props.children.iter() }
@@ -221,7 +257,8 @@ impl Component for Button {
                     aria-expanded="false"
                     data-bs-toggle="dropdown"
                     data-bs-dismiss={modal_dismiss}
-                    title={props.title.clone()}
+                    // title={props.title.clone()}
+                    ref={props.node_ref.clone()}
                 >
                     { &props.text }
                     { for props.children.iter() }
@@ -235,7 +272,8 @@ impl Component for Button {
                     name={props.name.clone()}
                     onclick={props.onclick.clone()}
                     data-bs-dismiss={modal_dismiss}
-                    title={props.title.clone()}
+                    // title={props.title.clone()}
+                    ref={props.node_ref.clone()}
                 >
                     { &props.text }
                     { for props.children.iter() }

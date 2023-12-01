@@ -19,9 +19,11 @@ name = "yew_bootstrap"
 [dependencies]
 yew = { version = "0.21", features = ["csr"] }
 log = "0.4"
+wasm-bindgen = "0.2.*"
+web-sys = { version = "0.3.*", features = ["HtmlElement"] }
+popper-rs = { version = "0.3.0", features = ["yew"] }
 
 [dev-dependencies]
-wasm-bindgen = "0.2.*"
 web-sys = { version = "0.3.*", features = ["HtmlTextAreaElement", "HtmlSelectElement"] }
 
 [build-dependencies]
