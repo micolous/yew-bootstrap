@@ -1,6 +1,6 @@
 //! Implements tooltip suppport.
 //!
-//! `yew` presues it has exclusive control of the DOM, which conflicts with the
+//! `yew` presumes it has exclusive control of the DOM, which conflicts with the
 //! Bootstrap's assumption that it also has exclusive control of the DOM.
 //!
 //! So, we need to re-implement the Tooltip plugin using `yew`...
@@ -9,25 +9,12 @@
 //! * <https://github.com/twbs/bootstrap/blob/main/js/src/tooltip.js>
 
 use popper_rs::{
-    prelude::{use_popper, Modifier, Offset, Options, Strategy},
+    prelude::{use_popper, Modifier, Offset, Options, Placement, Strategy},
     state::ApplyAttributes,
 };
 use wasm_bindgen::{closure::Closure, JsCast};
 use web_sys::HtmlElement;
 use yew::{platform::spawn_local, prelude::*};
-use crate::util::Placement;
-
-impl Placement {
-    const fn tooltip_bootstrap_class(&self) -> &'static str {
-        match self {
-            Placement::Auto => "bs-tooltip-auto",
-            Placement::Left => "bs-tooltip-left",
-            Placement::Top => "bs-tooltip-top",
-            Placement::Right => "bs-tooltip-right",
-            Placement::Bottom => "bs-tooltip-bottom",
-        }
-    }
-}
 
 #[derive(Properties, Clone, PartialEq)]
 pub struct TooltipProps {
@@ -36,16 +23,24 @@ pub struct TooltipProps {
     /// If the `target` can be `disabled`, pass the same value to
     /// [Tooltip's `disabled` property][Self::disabled] to ensure that it will
     /// be automatically hidden even if it had focus on was being hovered.
-    ///
-    /// If the `target` has an `id` set, the [Tooltip] will set its
-    /// `aria-describedby` attribute whenever it is visible.
     pub target: NodeRef,
+
+    /// ID of the tooltip.
+    ///
+    /// If this is set, [Tooltip] will set the `target`'s `aria-describedby`
+    /// attribute whenever it is visible.
+    #[prop_or_default]
+    pub id: Option<AttrValue>,
 
     /// Content of the tooltip.
     #[prop_or_default]
     pub children: Children,
 
-    /// Placement strategy of the tooltip.
+    /// Placement of the tooltip.
+    ///
+    /// [Popper's website shows all placement options][0].
+    ///
+    /// [0]: https://popper.js.org/
     #[prop_or_default]
     pub placement: Placement,
 
@@ -111,14 +106,45 @@ pub struct TooltipProps {
     pub disabled: bool,
 }
 
+/// [Bootstrap tooltip component][0].
+///
+/// Bootstrap's tooltips depend on Popper, which presumes control of the DOM.
+/// Yew *also* presumes complete control of the DOM, so this can lead to
+/// unexpected behaviour whenever it reuses DOM components.
+///
+/// This has a few differences from Bootstrap's implementation, which are
+/// [similar to `react-bootstrap`][2]:
+///
+/// * Unlike ordinary Bootstrap, `<Tooltip>` is *always* present in the DOM,
+///   even when not displayed.
+///
+///   A `<Tooltip>` needs to remain part of the DOM if it *could* be shown in a
+///   component. Use the [`show`][show] and [`disabled`][disabled] properties to
+///   control its display.
+///
+/// * When using a [`target`][target] which could be `disabled`, pass that
+///   state [to the `<Tooltip>` as well][disabled].
+///
+/// * `<Tooltip>` doesn't support the `title` or `data-bs-title` attributes.
+///
+///   Instead, `<Tooltip>` uses [`children`][], which supports arbitrary HTML.
+///
+/// * `<Tooltip>` supports [*all* of Popper's placement options][placement],
+///   [not just auto/left/right/top/bottom][1].
+///
+/// * This 
+///
+/// [0]: https://getbootstrap.com/docs/5.3/components/tooltips/
+/// [1]: https://getbootstrap.com/docs/5.3/components/tooltips/#directions
+/// [2]: https://github.com/react-bootstrap/react-bootstrap/blob/master/src/Tooltip.tsx
+/// [placement]: TooltipProps::placement
+/// [show]: TooltipProps::show
+/// [target]: TooltipProps::target
+/// [disabled]: TooltipProps::disabled
+/// [children]: TooltipProps::children
 #[function_component]
 pub fn Tooltip(props: &TooltipProps) -> Html {
     let tooltip_ref = use_node_ref();
-    let target_id = props.target.cast::<HtmlElement>().and_then(|e| {
-        let id = e.id();
-        (!id.is_empty()).then_some(id)
-    });
-    let tooltip_id = target_id.as_ref().map(|id| format!("ybst-{id}"));
 
     // Adapted from https://github.com/ctron/popper-rs/blob/main/examples/yew/src/example/basic.rs
     let options = use_memo(props.placement, |placement| Options {
@@ -132,14 +158,6 @@ pub fn Tooltip(props: &TooltipProps) -> Html {
     });
 
     let popper = use_popper(props.target.clone(), tooltip_ref.clone(), options).unwrap();
-    {
-        let popper = popper.instance.clone();
-        use_effect(|| {
-            spawn_local(async move {
-                popper.update().await;
-            });
-        });
-    }
 
     let focused = use_state_eq(|| false);
     let hovered = use_state_eq(|| false);
@@ -182,6 +200,7 @@ pub fn Tooltip(props: &TooltipProps) -> Html {
         focused.set(false);
         hovered.set(false);
     }
+
     let show = !props.disabled
         && (props.show
             || (*focused && props.trigger_on_focus)
@@ -253,7 +272,7 @@ pub fn Tooltip(props: &TooltipProps) -> Html {
     });
 
     use_effect_with(
-        (props.target.clone(), tooltip_id, show),
+        (props.target.clone(), props.id.clone(), show),
         |(target_ref, tooltip_id, show)| {
             let Some(parent_elem) = target_ref.cast::<HtmlElement>() else {
                 return;
@@ -270,35 +289,45 @@ pub fn Tooltip(props: &TooltipProps) -> Html {
         },
     );
 
-    let mut class = classes!["tooltip"];
+    let mut class = classes!["tooltip", "bs-tooltip-auto"];
     if props.fade {
         class.push("fade");
     }
-    let mut popper_style = popper.state.styles.popper.clone();
     if show {
         class.push("show");
-        popper_style.remove("z-index");
-    } else {
-        popper_style.insert("z-index".to_string(), "-100".to_string());
     }
-    class.push(props.placement.tooltip_bootstrap_class());
 
-    html_nested! {
-        <div
-            ref={&tooltip_ref}
-            role="tooltip"
-            {class}
-            style={&popper_style}
-            data-show={&data_show}
-        >
+    let mut popper_style = popper.state.styles.popper.clone();
+    // Make sure `<Tooltip>` doesn't interfere with events going to other
+    // elements, even when hidden.
+    popper_style.insert("pointer-events".to_string(), "none".to_string());
+
+    let tooltip = create_portal(
+        html_nested! {
             <div
-                class="tooltip-arrow"
-                data-popper-arrow="true"
-                style={&popper.state.styles.arrow}
-            />
-            <div class="tooltip-inner">
-                { for props.children.iter() }
+                ref={&tooltip_ref}
+                role="tooltip"
+                {class}
+                style={&popper_style}
+                data-show={&data_show}
+                id={props.id.clone()}
+            >
+                <div
+                    class="tooltip-arrow"
+                    data-popper-arrow="true"
+                    style={&popper.state.styles.arrow}
+                />
+                <div class="tooltip-inner">
+                    { for props.children.iter() }
+                </div>
             </div>
-        </div>
+        },
+        gloo::utils::body().into(),
+    );
+
+    html! {
+        <>
+            {tooltip}
+        </>
     }
 }
