@@ -322,7 +322,7 @@ pub fn Tooltip(props: &TooltipProps) -> Html {
                 </div>
             </div>
         },
-        gloo::utils::body().into(),
+        gloo_utils::body().into(),
     );
 
     html! {
