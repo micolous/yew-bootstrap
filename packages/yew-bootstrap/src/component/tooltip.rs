@@ -132,7 +132,7 @@ pub struct TooltipProps {
 /// * `<Tooltip>` supports [*all* of Popper's placement options][placement],
 ///   [not just auto/left/right/top/bottom][1].
 ///
-/// * This 
+/// * This
 ///
 /// [0]: https://getbootstrap.com/docs/5.3/components/tooltips/
 /// [1]: https://getbootstrap.com/docs/5.3/components/tooltips/#directions
@@ -165,20 +165,12 @@ pub fn Tooltip(props: &TooltipProps) -> Html {
     let onshow = {
         let focused = focused.clone();
         let hovered = hovered.clone();
-        let popper = popper.instance.clone();
-        Callback::from(move |evt_type: String| {
-            match evt_type.as_str() {
-                "mouseenter" => hovered.set(true),
-                "focusin" => focused.set(true),
-                _ => {
-                    return;
-                }
+        Callback::from(move |evt_type: String| match evt_type.as_str() {
+            "mouseenter" => hovered.set(true),
+            "focusin" => focused.set(true),
+            _ => {
+                return;
             }
-            let popper = popper.clone();
-
-            spawn_local(async move {
-                popper.update().await;
-            });
         })
     };
 
@@ -207,6 +199,16 @@ pub fn Tooltip(props: &TooltipProps) -> Html {
             || (*hovered && props.trigger_on_hover));
     let data_show = show.then(AttrValue::default);
 
+    use_effect_with((show, popper.instance.clone()), |(show, popper)| {
+        if *show {
+            let popper = popper.clone();
+
+            spawn_local(async move {
+                popper.update().await;
+            });
+        }
+    });
+
     use_effect_with(
         (tooltip_ref.clone(), popper.state.attributes.popper.clone()),
         |(tooltip_ref, attributes)| {
@@ -218,50 +220,48 @@ pub fn Tooltip(props: &TooltipProps) -> Html {
     // result when they're disabled.
     use_effect_with(props.target.clone(), |target_ref| {
         let show_listener = Closure::<dyn Fn(Event)>::wrap(Box::new(move |e: Event| {
-            // console::log_1(&format!("mouse enter event").into());
             onshow.emit(e.type_());
         }));
         let hide_listener = Closure::<dyn Fn(Event)>::wrap(Box::new(move |e: Event| {
-            // console::log_1(&format!("mouse leave event").into());
             onhide.emit(e.type_());
         }));
-        let parent_elem = target_ref.cast::<HtmlElement>();
+        let target_elem = target_ref.cast::<HtmlElement>();
 
-        if let Some(parent_elem) = &parent_elem {
-            let _ = parent_elem.add_event_listener_with_callback(
+        if let Some(target_elem) = &target_elem {
+            let _ = target_elem.add_event_listener_with_callback(
                 "focusin",
                 show_listener.as_ref().unchecked_ref(),
             );
-            let _ = parent_elem.add_event_listener_with_callback(
+            let _ = target_elem.add_event_listener_with_callback(
                 "focusout",
                 hide_listener.as_ref().unchecked_ref(),
             );
 
-            let _ = parent_elem.add_event_listener_with_callback(
+            let _ = target_elem.add_event_listener_with_callback(
                 "mouseenter",
                 show_listener.as_ref().unchecked_ref(),
             );
-            let _ = parent_elem.add_event_listener_with_callback(
+            let _ = target_elem.add_event_listener_with_callback(
                 "mouseleave",
                 hide_listener.as_ref().unchecked_ref(),
             );
         };
 
         move || {
-            if let Some(parent_elem) = parent_elem {
-                let _ = parent_elem.remove_event_listener_with_callback(
+            if let Some(target_elem) = target_elem {
+                let _ = target_elem.remove_event_listener_with_callback(
                     "focusin",
                     show_listener.as_ref().unchecked_ref(),
                 );
-                let _ = parent_elem.remove_event_listener_with_callback(
+                let _ = target_elem.remove_event_listener_with_callback(
                     "focusout",
                     hide_listener.as_ref().unchecked_ref(),
                 );
-                let _ = parent_elem.remove_event_listener_with_callback(
+                let _ = target_elem.remove_event_listener_with_callback(
                     "mouseenter",
                     show_listener.as_ref().unchecked_ref(),
                 );
-                let _ = parent_elem.remove_event_listener_with_callback(
+                let _ = target_elem.remove_event_listener_with_callback(
                     "mouseleave",
                     hide_listener.as_ref().unchecked_ref(),
                 );
@@ -274,16 +274,16 @@ pub fn Tooltip(props: &TooltipProps) -> Html {
     use_effect_with(
         (props.target.clone(), props.id.clone(), show),
         |(target_ref, tooltip_id, show)| {
-            let Some(parent_elem) = target_ref.cast::<HtmlElement>() else {
+            let Some(target_elem) = target_ref.cast::<HtmlElement>() else {
                 return;
             };
 
             match (tooltip_id, show) {
                 (Some(tooltip_id), true) => {
-                    let _ = parent_elem.set_attribute("aria-describedby", tooltip_id);
+                    let _ = target_elem.set_attribute("aria-describedby", tooltip_id);
                 }
                 _ => {
-                    let _ = parent_elem.remove_attribute("aria-describedby");
+                    let _ = target_elem.remove_attribute("aria-describedby");
                 }
             }
         },
