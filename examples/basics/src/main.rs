@@ -307,6 +307,19 @@ impl Component for Model {
                         <Button style={Color::Secondary} block={true}>{"Secondary"}</Button>
                     </div>
 
+                    <h2>{"Buttons with dropdown caret"}</h2>
+                    <p>{"These don't actually do anything yet."}</p>
+                    <ButtonGroup>
+                        <Button style={Color::Primary} dropdown={ButtonDropdown::Dropdown}>{"File"}</Button>
+                        <Button style={Color::Secondary} dropdown={true}>{"Edit"}</Button>
+                        <Button style={Color::Warning} dropdown={ButtonDropdown::None}>{"Send feedback"}</Button>
+                    </ButtonGroup>
+
+                    <ButtonGroup>
+                        <Button style={Color::Success}>{"Split button"}</Button>
+                        <Button style={Color::Danger} dropdown={ButtonDropdown::SplitDropdown}>{"Split button options"}</Button>
+                    </ButtonGroup>
+
                     <h1>{"Button groups"}</h1>
                     <ButtonGroup>
                         <Button style={Color::Primary}>{"Primary"}</Button>

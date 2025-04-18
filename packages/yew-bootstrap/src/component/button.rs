@@ -1,5 +1,5 @@
 use crate::util::Color;
-use yew::prelude::*;
+use yew::{html::IntoPropValue, prelude::*};
 
 #[derive(Clone, PartialEq, Eq)]
 pub enum ButtonSize {
@@ -11,6 +11,68 @@ pub enum ButtonSize {
 impl Default for ButtonSize {
     fn default() -> Self {
         ButtonSize::Normal
+    }
+}
+
+#[derive(Clone, Default, PartialEq, Eq)]
+pub enum ButtonDropdown {
+    /// Don't show a caret (arrow) next to the button text.
+    #[default]
+    None,
+
+    /// Regular drop-down button.
+    ///
+    /// This will show a caret (arrow) to the side of the regular button label,
+    /// indicating that it will open a drop-down menu.
+    ///
+    /// This option is purely cosmetic, and will not actually open a drop-down
+    /// menu without extra components.
+    Dropdown,
+
+    /// [Split drop-down button][0] variant.
+    ///
+    /// This allows you to attach a second button with a caret (arrow) to the
+    /// side of a regular button, so that clicking the main button and clicking
+    /// the caret do two different things.
+    ///
+    /// Enabling this option will visually hide the [`text`][Self::text] and any
+    /// [`children`][Self::children]. These are still exposed to screen readers,
+    /// so you should still set this.
+    ///
+    /// This option is purely cosmetic, and will not actually open a drop-down
+    /// menu without extra components.
+    ///
+    /// ## Example
+    ///
+    /// This is with two [Button] components in a [ButtonGroup]:
+    ///
+    /// ```rust
+    /// use yew::prelude::*;
+    /// use yew_bootstrap::component::{Button, ButtonDropdown, Tooltip};
+    /// use yew_bootstrap::util::Color;
+    ///
+    /// fn test() -> Html {
+    ///     html! {
+    ///         <ButtonGroup>
+    ///             <Button>{"Split button"}</Button>
+    ///             <Button dropdown={ButtonDropdown::SplitDropdown}>{"Toggle dropdown"}</Button>
+    ///         </ButtonGroup>
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// [0]: https://getbootstrap.com/docs/5.3/components/dropdowns/#split-button
+    /// [ButtonGroup]: super::ButtonGroup
+    SplitDropdown,
+}
+
+impl IntoPropValue<ButtonDropdown> for bool {
+    fn into_prop_value(self) -> ButtonDropdown {
+        if self {
+            ButtonDropdown::Dropdown
+        } else {
+            ButtonDropdown::None
+        }
     }
 }
 
@@ -154,6 +216,16 @@ pub struct ButtonProps {
     /// Optional HTML element ID for the underlying `<button>` or `<a>` element.
     #[prop_or_default]
     pub id: Option<AttrValue>,
+
+    /// Show a caret (arrow) icon on the edge of the button to indicate that it
+    /// will open a drop-down menu.
+    ///
+    /// See [ButtonDropdown] for variants and their usage.
+    ///
+    /// This attribute is purely cosmetic, and will not actually open a
+    /// drop-down menu without extra components.
+    #[prop_or_default]
+    pub dropdown: ButtonDropdown,
 }
 
 impl Component for Button {
@@ -166,6 +238,13 @@ impl Component for Button {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
+        let mut children = html! {
+            <>
+                { &props.text }
+                { for props.children.iter() }
+            </>
+        };
+
         let mut classes = Classes::new();
         classes.push("btn");
         if props.outline {
@@ -180,6 +259,23 @@ impl Component for Button {
         }
         if props.block {
             classes.push("btn-block");
+        }
+        match props.dropdown {
+            ButtonDropdown::None => {}
+            ButtonDropdown::Dropdown => {
+                classes.push("dropdown-toggle");
+            }
+            ButtonDropdown::SplitDropdown => {
+                classes.push("dropdown-toggle");
+                classes.push("dropdown-toggle-split");
+
+                // Visually hide the button label
+                children = html! {
+                    <span class="visually-hidden">
+                        {children}
+                    </span>
+                };
+            }
         }
         classes.push(props.class.clone());
 
@@ -200,8 +296,7 @@ impl Component for Button {
                     ref={props.node_ref.clone()}
                     id={props.id.clone()}
                 >
-                    { &props.text }
-                    { for props.children.iter() }
+                    {children}
                 </button>
             }
         } else if let Some(url) = props.url.as_ref().filter(|_| !props.disabled) {
@@ -217,8 +312,7 @@ impl Component for Button {
                     ref={props.node_ref.clone()}
                     id={props.id.clone()}
                 >
-                    { &props.text }
-                    { for props.children.iter() }
+                    {children}
                 </a>
             }
         } else {
@@ -232,8 +326,7 @@ impl Component for Button {
                     ref={props.node_ref.clone()}
                     id={props.id.clone()}
                 >
-                    { &props.text }
-                    { for props.children.iter() }
+                    {children}
                 </button>
             }
         }
