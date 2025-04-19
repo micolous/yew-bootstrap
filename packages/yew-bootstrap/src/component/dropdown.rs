@@ -267,7 +267,7 @@ pub fn DropdownMenu(props: &DropdownMenuProps) -> Html {
     // Contents:
     // * headers
     // * dividers
-    // 
+    //
     html! {
         <ul
             {class}
@@ -279,5 +279,78 @@ pub fn DropdownMenu(props: &DropdownMenuProps) -> Html {
         >
             { for props.children.iter() }
         </ul>
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialOrd, Ord, PartialEq, Eq)]
+pub enum DropdownCaretDirection {
+    /// The caret is positioned at the end of the button text, pointing down.
+    #[default]
+    Down,
+
+    /// The caret is positioned at the end of the button text, pointing up.
+    Up,
+
+    /// The caret is positioned at the end of the button text, pointing away
+    /// from it.
+    ///
+    /// This is on the right for LTR pages, and on the left for RTL pages.
+    End,
+
+    /// The caret is positioned at the start of the button text, pointing away
+    /// from it.
+    ///
+    /// This is on the left for LTR pages, and on the right for RTL pages.
+    Start,
+}
+
+#[derive(Properties, Clone, PartialEq)]
+pub struct DropdownProps {
+    /// Dropdown container elements.
+    ///
+    /// This should consist of a [`Button`] and a [`DropdownMenu`].
+    ///
+    /// [`Button`]: super::Button
+    #[prop_or_default]
+    pub children: Children,
+
+    /// The direction and position of the caret on a child [`Button`] with the
+    /// [`dropdown` attribute][0].
+    ///
+    /// Unlike regular Bootstrap, this does not affect the placement of the
+    /// [`DropdownMenu`]: use [`<DropdownMenu placement={}>`][1] for that.
+    ///
+    /// [0]: super::ButtonProps::dropdown
+    /// [1]: DropdownMenuProps::placement
+    /// [`Button`]: super::Button
+    #[prop_or_default]
+    pub caret_direction: DropdownCaretDirection,
+
+    /// Additional CSS classes for the [Dropdown] container.
+    #[prop_or_default]
+    pub class: Classes,
+}
+
+/// Container for [a button with dropdown menu][dropdown].
+///
+/// [dropdown]: https://getbootstrap.com/docs/5.3/components/dropdowns/
+#[function_component]
+pub fn Dropdown(props: &DropdownProps) -> Html {
+    let mut classes = Classes::new();
+    match props.caret_direction {
+        DropdownCaretDirection::Down => classes.push("dropdown"),
+        DropdownCaretDirection::Up => classes.push("dropup"),
+        DropdownCaretDirection::End => classes.push("dropend"),
+        DropdownCaretDirection::Start => classes.push("dropstart"),
+    }
+
+    classes.extend(&props.class);
+
+    html! {
+        <div
+            class={classes}
+        >
+            { for props.children.iter() }
+        </div>
     }
 }

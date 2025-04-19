@@ -1,20 +1,24 @@
 use yew::prelude::*;
 
-use yew_bootstrap::component::*;
-use yew_bootstrap::icons::*;
-use yew_bootstrap::util::*;
+use std::collections::BTreeMap;
 use gloo_console::debug;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlElement;
+use yew_bootstrap::component::*;
+use yew_bootstrap::icons::*;
+use yew_bootstrap::util::*;
 
 enum Msg {
     ToggleTooltip,
     ShowTooltip,
     HideTooltip,
+    ToggleDropdown(DropdownCaretDirection),
+    HideDropdown(Option<DropdownCaretDirection>),
 }
 
 struct Model {
     tooltip_show: bool,
+    dropdown_show: BTreeMap<DropdownCaretDirection, bool>,
 }
 
 impl Component for Model {
@@ -24,6 +28,7 @@ impl Component for Model {
     fn create(_ctx: &Context<Self>) -> Self {
         Self {
             tooltip_show: false,
+            dropdown_show: BTreeMap::new(),
         }
     }
 
@@ -38,6 +43,21 @@ impl Component for Model {
             Msg::HideTooltip => {
                 self.tooltip_show = false;
             }
+            Msg::ToggleDropdown(direction) => {
+                if let Some(state) = self.dropdown_show.get_mut(&direction) {
+                    *state = !*state;
+                } else {
+                    self.dropdown_show.insert(direction, true);
+                }
+            },
+            Msg::HideDropdown(direction) => match direction {
+                None => {
+                    self.dropdown_show.clear()
+                }
+                Some(direction) => {
+                    self.dropdown_show.insert(direction, false);
+                }
+            },
         }
         true
     }
@@ -49,8 +69,12 @@ impl Component for Model {
             icon: BI::ROCKET,
         };
 
-        // Show a message in the debug console whenever a NavItem or
-        // NavDropdownItem is clicked.
+        let hide_dropdown = ctx
+            .link()
+            .callback(|direction| Msg::HideDropdown(direction));
+
+        // Show a message in the debug console whenever a NavItem,
+        // NavDropdownItem or Dropdown item is clicked.
         let onclick = Callback::from(move |event: MouseEvent| {
             let Some(target) = event.target() else {
                 return;
@@ -61,6 +85,8 @@ impl Component for Model {
             debug!("onclick for:", target.inner_text().trim());
             // Stop the browser from actually following the "#" link.
             event.prevent_default();
+            // Hide the button dropdown menu.
+            hide_dropdown.emit(None);
         });
 
         let tooltip_click_p_ref = NodeRef::default();
@@ -307,18 +333,84 @@ impl Component for Model {
                         <Button style={Color::Secondary} block={true}>{"Secondary"}</Button>
                     </div>
 
-                    <h2>{"Buttons with dropdown caret"}</h2>
-                    <p>{"These don't actually do anything yet."}</p>
-                    <ButtonGroup>
-                        <Button style={Color::Primary} dropdown={ButtonDropdown::Dropdown}>{"File"}</Button>
-                        <Button style={Color::Secondary} dropdown={true}>{"Edit"}</Button>
-                        <Button style={Color::Warning} dropdown={ButtonDropdown::None}>{"Send feedback"}</Button>
-                    </ButtonGroup>
+                    <h2>{"Buttons with dropdowns"}</h2>
+                    {
+                        for [
+                            (DropdownCaretDirection::Down, Placement::BottomStart),
+                            (DropdownCaretDirection::Up, Placement::TopStart),
+                            (DropdownCaretDirection::End, Placement::RightStart),
+                            (DropdownCaretDirection::Start, Placement::LeftStart),
+                        ].into_iter().map(|(caret_direction, placement)| {
+                            let btn_ref = NodeRef::default();
+                            let toggle_dropdown = ctx.link().callback(move |_| Msg::ToggleDropdown(caret_direction));
+                            // Unconditionally close the dropdown when requested.
+                            let on_close_requested = ctx.link().callback(move |_| Msg::HideDropdown(Some(caret_direction)));
 
-                    <ButtonGroup>
-                        <Button style={Color::Success}>{"Split button"}</Button>
-                        <Button style={Color::Danger} dropdown={ButtonDropdown::SplitDropdown}>{"Split button options"}</Button>
-                    </ButtonGroup>
+                            html! {
+                                <>
+                                    <Dropdown class="btn-group" {caret_direction}>
+                                        <Button
+                                            style={Color::Primary}
+                                            dropdown={true}
+                                            onclick={toggle_dropdown}
+                                            node_ref={&btn_ref}
+                                        >
+                                            {format!("Drop{caret_direction:?}")}
+                                        </Button>
+                                        <DropdownMenu
+                                            target={btn_ref.clone()}
+                                            show={self.dropdown_show.get(&caret_direction).copied().unwrap_or_default()}
+                                            {placement}
+                                            {on_close_requested}
+                                        >
+                                            <li>
+                                                <a
+                                                    class="dropdown-item"
+                                                    href="#"
+                                                    onclick={onclick.clone()}
+                                                    tabindex="0"
+                                                >
+                                                    {"Action"}
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a
+                                                    class="dropdown-item"
+                                                    href="#"
+                                                    onclick={onclick.clone()}
+                                                    tabindex="0"
+                                                >
+                                                    {"Another action"}
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a
+                                                    class="dropdown-item"
+                                                    href="#"
+                                                    onclick={onclick.clone()}
+                                                    tabindex="0"
+                                                >
+                                                    {"Something else here"}
+                                                </a>
+                                            </li>
+                                        </DropdownMenu>
+                                    </Dropdown>
+                                    {" "}
+                                </>
+                            }
+
+                        })
+                    }
+
+                    // <ButtonGroup>
+                    //     <Button style={Color::Secondary} dropdown={true}>{"Fake dropdown"}</Button>
+                    //     <Button style={Color::Warning} dropdown={ButtonDropdown::None}>{"Send feedback"}</Button>
+                    // </ButtonGroup>
+                    // {" "}
+                    // <ButtonGroup>
+                    //     <Button style={Color::Success}>{"Split button"}</Button>
+                    //     <Button style={Color::Danger} dropdown={ButtonDropdown::SplitDropdown}>{"Split button options"}</Button>
+                    // </ButtonGroup>
 
                     <h1>{"Button groups"}</h1>
                     <ButtonGroup>
@@ -552,7 +644,7 @@ impl Component for Model {
                     <Line vertical={true} height={Size::Px(50)} /><br />
                     <Line vertical={true} width={Size::Px(100)} /><br />
                 </div>
-                { include_cdn_js() }
+                { include_cdn_js_unbundled() }
             </>
         }
     }
