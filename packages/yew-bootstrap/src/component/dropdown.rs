@@ -44,6 +44,18 @@ pub struct DropdownMenuProps {
     /// some other event handler setting [`show`][Self::show] to `false`.
     #[prop_or_default]
     pub on_close_requested: Option<Callback<DropdownCloseRequest>>,
+
+    /// The tag to use for the dropdown menu.
+    ///
+    /// Defaults to `ul`.
+    #[prop_or("ul".to_string())]
+    pub tag: String,
+
+    #[prop_or_default]
+    pub aria_labelledby: Option<AttrValue>,
+
+    #[prop_or(true)]
+    pub use_popper: bool,
 }
 
 #[function_component]
@@ -61,7 +73,14 @@ pub fn DropdownMenu(props: &DropdownMenuProps) -> Html {
         ..Default::default()
     });
 
-    let popper = use_popper(props.target.clone(), dropdown_ref.clone(), options).unwrap();
+    let (target_ref, popper_ref) = if props.use_popper {
+        (props.target.clone(), dropdown_ref.clone())
+    } else {
+        // Pass a non-existent NodeRef to Popper to disable it.
+        (NodeRef::default(), NodeRef::default())
+    };
+
+    let popper = use_popper(target_ref, popper_ref, options).unwrap();
 
     let mut class = classes!["dropdown-menu"];
     if props.show {
@@ -269,16 +288,18 @@ pub fn DropdownMenu(props: &DropdownMenuProps) -> Html {
     // * dividers
     //
     html! {
-        <ul
+        <@{props.tag.clone()}
             {class}
             data-show={data_show}
             ref={&dropdown_ref}
             style={&popper.state.styles.popper}
             {onfocusout}
             {onkeydown}
+            aria-labelledby={props.aria_labelledby.clone()}
+            data-bs-popper={(!props.use_popper).then_some("static")}
         >
             { for props.children.iter() }
-        </ul>
+        </@>
     }
 }
 
@@ -329,6 +350,12 @@ pub struct DropdownProps {
     /// Additional CSS classes for the [Dropdown] container.
     #[prop_or_default]
     pub class: Classes,
+
+    /// The tag to use for the dropdown container.
+    ///
+    /// Defaults to `div`.
+    #[prop_or("div".to_string())]
+    pub tag: String,
 }
 
 /// Container for [a button with dropdown menu][dropdown].
@@ -347,10 +374,10 @@ pub fn Dropdown(props: &DropdownProps) -> Html {
     classes.extend(&props.class);
 
     html! {
-        <div
+        <@{props.tag.clone()}
             class={classes}
         >
             { for props.children.iter() }
-        </div>
+        </@>
     }
 }

@@ -99,7 +99,7 @@ impl Component for Model {
                 <NavBar nav_id={"test-nav"} class="navbar-expand-lg navbar-light bg-light" brand={brand}>
                     <NavItem text="link 1" icon={&BI::EMOJI_SUNGLASSES} onclick={onclick.clone()} url="#" />
                     <NavItem text="link 2" onclick={onclick.clone()} url="#" />
-                    <NavDropdown text="several items" icon={&BI::MENU_APP}>
+                    <NavDropdown text="several items" icon={&BI::MENU_APP} id="several-items">
                         <NavDropdownItem text="Exclamation icon" icon={&BI::EXCLAMATION} onclick={onclick.clone()} url="#" />
                         <NavDropdownItem text="Magic icon" icon={&BI::MAGIC} onclick={onclick.clone()} url="#" />
                         <NavDropdownItem text="Tools icon" icon={&BI::TOOLS} onclick={onclick.clone()} url="#" />

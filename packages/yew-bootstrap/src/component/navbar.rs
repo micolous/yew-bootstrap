@@ -1,5 +1,7 @@
+use gloo_console::console_dbg;
 use yew::prelude::*;
 use super::Container;
+use crate::component::{Dropdown, DropdownMenu};
 use crate::util::Dimension;
 use crate::icons::BI;
 
@@ -59,8 +61,11 @@ impl Component for NavDropdownItem {
 }
 
 /// A dropdown menu, child of [NavBar]. See [NavDropdownProps] for a listing of properties.
-#[derive(Clone, PartialEq, Eq)]
-pub struct NavDropdown { }
+#[derive(Clone, PartialEq)]
+pub struct NavDropdown {
+    button_ref: NodeRef,
+    expanded: bool,
+}
 
 /// Properties for [NavDropdown]
 #[derive(Properties, Clone, PartialEq)]
@@ -70,7 +75,7 @@ pub struct NavDropdownProps {
     /// the id of the link with the dropdown-toggle class, referenced by aria-labelledby
     #[prop_or_default]
     pub id: AttrValue,
-    /// If true, menu is expanded (ie visible)
+    /// If `true`, menu is initially expanded (ie: visible)
     #[prop_or_default]
     pub expanded: bool,
     /// the text of the link with the dropdown-toggle class
@@ -84,22 +89,50 @@ pub struct NavDropdownProps {
     pub icon: Option<&'static BI>,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum NavDropdownMsg {
+    Show,
+    Hide,
+}
+
 impl Component for NavDropdown {
-    type Message = ();
+    type Message = NavDropdownMsg;
     type Properties = NavDropdownProps;
 
-    fn create(_ctx: &Context<Self>) -> Self {
-        Self { }
+    fn create(ctx: &Context<Self>) -> Self {
+        Self {
+            expanded: ctx.props().expanded,
+            button_ref: NodeRef::default(),
+        }
+    }
+
+    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
+        let props = ctx.props();
+        if props.expanded != old_props.expanded {
+            // Only change if it is different from previous.
+            self.expanded = props.expanded;
+            true
+        } else {
+            false
+        }
+    }
+
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+        match msg {
+            NavDropdownMsg::Show => self.expanded = true,
+            NavDropdownMsg::Hide => self.expanded = false,
+        }
+
+        true
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let expanded = String::from(match props.expanded {
+        let expanded = String::from(match self.expanded {
             true => "true",
             false => "false"
         });
-
 
         let mut dropdown_toggle_classes = Classes::new();
         dropdown_toggle_classes.push(String::from("nav-link"));
@@ -109,18 +142,47 @@ impl Component for NavDropdown {
             dropdown_toggle_classes.push(String::from("active"));
         }
 
+        let onclick = {
+            let msg = if self.expanded {
+                NavDropdownMsg::Hide
+            } else {
+                NavDropdownMsg::Show
+            };
+            let cb = ctx.link().callback(move |_| msg);
+
+            move |evt: MouseEvent| {
+                evt.prevent_default();
+                cb.emit(());
+            }
+        };
+        let on_close_requested = ctx.link().callback(|_| NavDropdownMsg::Hide);
+
         html! {
-            <li class="nav-item dropdown">
-                <a class={dropdown_toggle_classes} href="#" id={props.id.clone()} role="button" data-bs-toggle="dropdown" aria-expanded={expanded}>
+            <Dropdown class="nav-item" tag="li">
+                <a
+                    class={dropdown_toggle_classes}
+                    href="#"
+                    id={props.id.clone()}
+                    role="button"
+                    aria-expanded={expanded}
+                    ref={&self.button_ref}
+                    {onclick}
+                >
                     if let Some(icon) = props.icon {
                         {icon}{" "}
                     }
                     {props.text.clone()}
                 </a>
-                <ul class="dropdown-menu" aria-labelledby={props.id.clone()}>
+                <DropdownMenu
+                    target={self.button_ref.clone()}
+                    aria_labelledby={props.id.clone()}
+                    show={self.expanded}
+                    {on_close_requested}
+                    use_popper={false}
+                >
                     { for props.children.iter() }
-                </ul>
-            </li>
+                </DropdownMenu>
+            </Dropdown>
         }
     }
 }
