@@ -5,9 +5,9 @@ use yew::{html, virtual_dom::VNode};
 pub fn include_cdn() -> VNode {
     html! {
         <link
-            href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css"
             rel="stylesheet"
-            integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3"
+            integrity="sha256-zzPh8NflvEInFbVSzLYGVMLOn0j0kfsjq/UlNeMBRYw="
             crossorigin="anonymous"
         />
     }
@@ -47,12 +47,12 @@ pub fn include_cdn_js_unbundled() -> VNode {
             <link
                 data-trunk={"true"}
                 rel="copy-file"
-                href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js.map"
+                href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.min.js.map"
             />
             <script
-                src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"
+                src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.min.js"
                 data-trunk={"true"}
-                integrity="sha256-cMPWkL3FzjuaFSfEYESYmjF25hCIL6mfRSPnW8OVvM4="
+                integrity="sha256-4WoqxfIum0S9B+4qeMWY3Qtc+Mj0XXWFPSCVAi3jE1Q="
                 crossorigin="anonymous"
             >
             </script>
@@ -85,12 +85,12 @@ pub fn include_cdn_js_bundled() -> VNode {
             <link
                 data-trunk={"true"}
                 rel="copy-file"
-                href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js.map"
+                href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js.map"
             />
             <script
-                src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+                src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"
                 data-trunk={"true"}
-                integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3"
+                integrity="sha256-ORBCb//WwUWwNh+EjsvO97snO3mAJ1+jhMzrlPBTYSQ="
                 crossorigin="anonymous"
             >
             </script>
@@ -102,7 +102,7 @@ pub fn include_cdn_js_bundled() -> VNode {
 pub fn include_inline() -> VNode {
     html! {
         <style>
-            {include_str!("bootstrap-5.1.3.min.css")}
+            {include_str!("bootstrap-5.3.5.min.css")}
         </style>
     }
 }
