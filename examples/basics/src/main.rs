@@ -94,7 +94,7 @@ impl Component for Model {
 
         html! {
             <>
-                {include_inline()}
+                {include_cdn()}
                 {BIFiles::cdn()}
                 <NavBar nav_id={"test-nav"} class="navbar-expand-lg navbar-light bg-light" brand={brand}>
                     <NavItem text="link 1" icon={&BI::EMOJI_SUNGLASSES} onclick={onclick.clone()} url="#" />
@@ -365,7 +365,7 @@ impl Component for Model {
                                         >
                                             <li>
                                                 <a
-                                                    class="dropdown-item"
+                                                    class="dropdown-item position-relative"
                                                     href="#"
                                                     onclick={onclick.clone()}
                                                     tabindex="0"
@@ -375,7 +375,7 @@ impl Component for Model {
                                             </li>
                                             <li>
                                                 <a
-                                                    class="dropdown-item"
+                                                    class="dropdown-item position-relative"
                                                     href="#"
                                                     onclick={onclick.clone()}
                                                     tabindex="0"
@@ -385,7 +385,7 @@ impl Component for Model {
                                             </li>
                                             <li>
                                                 <a
-                                                    class="dropdown-item"
+                                                    class="dropdown-item position-relative"
                                                     href="#"
                                                     onclick={onclick.clone()}
                                                     tabindex="0"
