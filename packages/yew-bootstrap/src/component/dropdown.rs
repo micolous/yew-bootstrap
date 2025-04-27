@@ -44,6 +44,9 @@ pub struct DropdownMenuProps {
     /// some other event handler setting [`show`][Self::show] to `false`.
     #[prop_or_default]
     pub on_close_requested: Option<Callback<DropdownCloseRequest>>,
+
+    #[prop_or_default]
+    pub style: Option<AttrValue>,
 }
 
 #[function_component]
@@ -248,12 +251,17 @@ pub fn DropdownMenu(props: &DropdownMenuProps) -> Html {
         },
     );
 
+    let mut style = popper.state.styles.popper.to_string();
+    if let Some(s) = &props.style {
+        style.push_str(s.as_str());
+    }
+
     html! {
         <ul
             {class}
             data-show={data_show}
             ref={&dropdown_ref}
-            style={&popper.state.styles.popper}
+            {style}
             {onfocusout}
             {onkeydown}
         >
