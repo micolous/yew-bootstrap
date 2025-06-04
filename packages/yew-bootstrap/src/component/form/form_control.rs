@@ -1,5 +1,5 @@
 use super::*;
-use yew::{prelude::*, html::IntoPropValue};
+use yew::{html::IntoPropValue, prelude::*};
 
 /// Validation type for a form control, with feedback message
 #[derive(Clone, PartialEq)]
@@ -34,7 +34,7 @@ pub enum FormControlReadOnly {
     /// On [checkbox][FormControlType::Checkbox] and
     /// [radio][FormControlType::Radio] inputs, this is the same as
     /// [`ReadOnly`][FormControlReadOnly::ReadOnly].
-    /// 
+    ///
     /// This is not supported for [select][FormControlType::Select] elements,
     /// use the [`disabled` property][FormControlProps::disabled] instead.
     ///
@@ -143,6 +143,12 @@ pub struct FormControlProps {
     /// This does not work with [FormControlType::Select].
     #[prop_or_default]
     pub readonly: FormControlReadOnly,
+
+    #[prop_or_default]
+    pub inputmode: Option<AttrValue>,
+
+    #[prop_or_default]
+    pub pattern: Option<AttrValue>,
 }
 
 /// Convert an option (Typically integer) to an AttrValue option
@@ -350,9 +356,10 @@ pub fn FormControl(props: &FormControlProps) -> Html {
         ),
     };
 
-    let pattern = match &props.ctype {
-        FormControlType::Email { pattern } => pattern,
-        FormControlType::Url { pattern } => pattern,
+    let pattern = match (&props.pattern, &props.ctype) {
+        (pattern, _) if pattern.is_some() => pattern,
+        (_, FormControlType::Email { pattern }) => pattern,
+        (_, FormControlType::Url { pattern }) => pattern,
         _ => &None,
     };
 
@@ -533,6 +540,7 @@ pub fn FormControl(props: &FormControlProps) -> Html {
                         name={ props.name.clone() }
                         value={ props.value.clone() }
                         pattern={ pattern }
+                        inputmode={ props.inputmode.clone() }
                         accept={ accept_str }
                         placeholder={ placeholder }
                         min={ min_str }
